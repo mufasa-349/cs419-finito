@@ -44,21 +44,44 @@ def load_image(image_path):
     return img
 
 
-def preprocess_image(image):
+def preprocess_image(image, apply_noise_removal=True, noise_removal_method='gaussian', kernel_size=5):
     """
-    Preprocess image: Normalize intensity to [0, 255]
+    Preprocess image: Normalize intensity to [0, 255] and optionally remove noise.
     
     Args:
         image: Input grayscale image
+        apply_noise_removal: Whether to apply noise removal (default: True)
+        noise_removal_method: Method for noise removal - 'gaussian' or 'median' (default: 'gaussian')
+        kernel_size: Kernel size for noise removal (default: 5, must be odd)
         
     Returns:
-        normalized: Intensity-normalized image
+        processed: Preprocessed image (normalized and optionally denoised)
     """
+    # Normalize intensity to [0, 255]
     img_min, img_max = image.min(), image.max()
     if img_max > img_min:
         normalized = ((image - img_min) / (img_max - img_min) * 255).astype(np.uint8)
     else:
         normalized = image.astype(np.uint8)
+    
+    # Apply noise removal if requested
+    if apply_noise_removal:
+        if noise_removal_method == 'gaussian':
+            # Gaussian blur for noise reduction
+            # kernel_size must be odd
+            if kernel_size % 2 == 0:
+                kernel_size += 1
+            denoised = cv2.GaussianBlur(normalized, (kernel_size, kernel_size), 0)
+        elif noise_removal_method == 'median':
+            # Median filter for salt-and-pepper noise
+            # kernel_size must be odd
+            if kernel_size % 2 == 0:
+                kernel_size += 1
+            denoised = cv2.medianBlur(normalized, kernel_size)
+        else:
+            raise ValueError(f"Unknown noise removal method: {noise_removal_method}. Use 'gaussian' or 'median'")
+        
+        return denoised
     
     return normalized
 
